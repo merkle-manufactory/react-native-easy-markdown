@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import PropTypes from 'prop-types'
 import {
     TouchableWithoutFeedback,
     Text,
@@ -7,22 +6,39 @@ import {
     Image,
     Linking,
     StyleSheet
-} from 'react-native';
+} from 'react-native-web';
+// @ts-ignore
 import SimpleMarkdown from 'simple-markdown';
 
 import styles from './styles';
-import Utils from './Utils';
+import {
+    concatStyles,
+    isTextOnly,
+    logDebug,
+} from './utils';
 
 
-// View components can never be inside Text components
-// Sibling Text components will wrap when they're nested, unless they are all wrapped in a Text component
-function getSafeWrapper(nodes) {
-    return Utils.isTextOnly(nodes) ? Text : View;
+
+
+type Props = {
+    debug: boolean,
+    parseInline: boolean,
+    markdownStyles: {},
+    useDefaultStyles: boolean,
+    renderImage: () => any,
+    renderLink: () => any,
+    renderListBullet: () => any,
 }
 
+export default class Markdown extends Component<Props> {
+    static defaultProps = {
+        debug: false,
+        useDefaultStyles: true,
+        parseInline: false,
+        markdownStyles: {}
+    };
 
-class Markdown extends Component {
-    constructor(props) {
+    constructor(props: Props) {
         super(props);
 
         const rules = SimpleMarkdown.defaultRules;
@@ -155,17 +171,19 @@ class Markdown extends Component {
     renderLink(node, key) {
 
         const { styles } = this.state;
-        let extras = Utils.concatStyles(null, styles.link);
+        let extras = concatStyles(null, styles.link);
         let children = this.renderNodes(node.props.children, key, extras);
 
         if (this.props.renderLink) {
             return this.props.renderLink(node.props.href, node.props.title, children);
         }
 
+        const SafeWrapper = isTextOnly(children) ? Text : TouchableWithoutFeedback;
+
         return (
-            <TouchableWithoutFeedback style={styles.linkWrapper} key={'linkWrapper_' + key} onPress={() => Linking.openURL(node.props.href).catch(() => { })}>
+            <SafeWrapper style={styles.linkWrapper} key={'linkWrapper_' + key} onPress={() => Linking.openURL(node.props.href).catch(() => { })}>
                 {children}
-            </TouchableWithoutFeedback>
+            </SafeWrapper>
         );
     }
 
@@ -197,7 +215,7 @@ class Markdown extends Component {
                 </View>
             );
         }
-        else if (Utils.isTextOnly(nodes)) {
+        else if (isTextOnly(nodes)) {
             return (
                 <Text key={`blockText_` + key} style={styles.block}>{nodes}</Text>
             );
@@ -220,12 +238,12 @@ class Markdown extends Component {
 
 
         switch (node.type) {
-            case 'h1': return this.renderText(node, key, Utils.concatStyles(extras, styles.h1));
-            case 'h2': return this.renderText(node, key, Utils.concatStyles(extras, styles.h2));
-            case 'h3': return this.renderText(node, key, Utils.concatStyles(extras, styles.h3));
-            case 'h4': return this.renderText(node, key, Utils.concatStyles(extras, styles.h4))
-            case 'h5': return this.renderText(node, key, Utils.concatStyles(extras, styles.h5));
-            case 'h6': return this.renderText(node, key, Utils.concatStyles(extras, styles.h6));
+            case 'h1': return this.renderText(node, key, concatStyles(extras, styles.h1));
+            case 'h2': return this.renderText(node, key, concatStyles(extras, styles.h2));
+            case 'h3': return this.renderText(node, key, concatStyles(extras, styles.h3));
+            case 'h4': return this.renderText(node, key, concatStyles(extras, styles.h4))
+            case 'h5': return this.renderText(node, key, concatStyles(extras, styles.h5));
+            case 'h6': return this.renderText(node, key, concatStyles(extras, styles.h6));
             case 'hr': return this.renderLine(node, key);
             case 'div': return this.renderBlock(node, key, extras);
             case 'ul': return this.renderList(node, key, false);
@@ -233,10 +251,10 @@ class Markdown extends Component {
             case 'li': return this.renderListItem(node, key, index, extras);
             case 'a': return this.renderLink(node, key);
             case 'img': return this.renderImage(node, key);
-            case 'strong': return this.renderText(node, key, Utils.concatStyles(extras, styles.strong));
-            case 'del': return this.renderText(node, key, Utils.concatStyles(extras, styles.del));
-            case 'em': return this.renderText(node, key, Utils.concatStyles(extras, styles.em));
-            case 'u': return this.renderText(node, key, Utils.concatStyles(extras, styles.u));
+            case 'strong': return this.renderText(node, key, concatStyles(extras, styles.strong));
+            case 'del': return this.renderText(node, key, concatStyles(extras, styles.del));
+            case 'em': return this.renderText(node, key, concatStyles(extras, styles.em));
+            case 'u': return this.renderText(node, key, concatStyles(extras, styles.u));
             case 'blockquote': return this.renderBlockQuote(node, key);
             case undefined: return this.renderText(node, key, extras);
             default: if (this.props.debug) console.log('Node type ' + node.type + ' is not supported'); return null;
@@ -255,7 +273,7 @@ class Markdown extends Component {
 
         if (this.props.debug) {
             console.log('\n\n==== LOGGING NODE TREE ===');
-            Utils.logDebug(content);
+            logDebug(content);
         }
 
         return (
@@ -265,22 +283,3 @@ class Markdown extends Component {
         );
     }
 }
-
-Markdown.propTypes = {
-    debug: PropTypes.bool,
-    parseInline: PropTypes.bool,
-    markdownStyles: PropTypes.object,
-    useDefaultStyles: PropTypes.bool,
-    renderImage: PropTypes.func,
-    renderLink: PropTypes.func,
-    renderListBullet: PropTypes.func,
-};
-
-Markdown.defaultProps = {
-    debug: false,
-    useDefaultStyles: true,
-    parseInline: false,
-    markdownStyles: {}
-};
-
-export default Markdown;

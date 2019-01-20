@@ -1,4 +1,10 @@
-const defaultStyles = {
+export interface Style {
+    [key: string]: number | string,
+}
+
+const defaultStyles: {
+    [key: string]: Style,
+} = {
     block: {
         marginBottom: 10,
         flexWrap: 'wrap',
@@ -105,4 +111,4 @@ const defaultStyles = {
     }
 };
 
-module.exports = defaultStyles;
+export default defaultStyles;
