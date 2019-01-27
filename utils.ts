@@ -1,17 +1,27 @@
+import * as React from 'react';
 import {
     Text,
     View,
 } from 'react-native-web';
 
-type Node = {
-    type?: {
+import { Style } from './styles';
+
+interface Node {
+    type: {
         displayName?: string,
         name?: string,
     },
 }
 
+interface ReactNode extends Node {
+    key: string,
+    props: {
+        children?: Array<ReactNode>,
+    }
+}
 
-export function concatStyles(extras, newStyle) {
+
+export function concatStyles(extras: null | { style: Style }, newStyle: Style) {
     console.log('concatStyles', extras, newStyle)
     let newExtras;
     if (extras) {
@@ -70,15 +80,16 @@ function getSafeWrapper(nodes: Array<Node>) {
     return isTextOnly(nodes) ? Text : View;
 }
 
-export function logDebug(nodeTree, level = 0) {
+export function logDebug(nodeTree: Array<ReactNode>, level: number = 0) {
     for (let i = 0; i < nodeTree.length; i++) {
         const node = nodeTree[i];
 
         if (node) {
-            let prefix = Array(level).join('-');
-            console.log(prefix + '> ' + node.key + ', NODE TYPE: ' + node.type.displayName);
+            const prefix = Array(level).join('-');
+            const name = node.type && (node.type.displayName || node.type.name);
+            console.log(prefix + '> ' + node.key + ', NODE TYPE: ' + name);
             if (Array.isArray(node.props.children)) {
-                this.logDebug(node.props.children, level + 1);
+                logDebug(node.props.children, level + 1);
             }
         }
     }
